@@ -4,6 +4,8 @@
   "description": "Tells you whether a failed selector changed or the element is simply gone - and optionally heals the step while still reporting the drift.",
   "type": "module",
   "license": "MIT",
+  "engines": { "node": ">=22.18" },
+  "files": ["src"],
   "exports": {
     ".": "./src/index.ts",
     "./playwright": "./src/playwright/index.ts"

@@ -6,6 +6,8 @@ export type HealRecord = {
     at: string
     testTitle: string
     selector: string
+    /** `pages/AuthorizedHeader.ts:42` - where the locator was built, when it could be determined. */
+    origin?: string
     suggestion: string
     verdict: string
     score: number
@@ -19,7 +21,7 @@ const FILE = 'heals.jsonl'
  * nobody updated, and that is the signal the guard in CI looks for.
  */
 export function appendHeal(
-    entry: { testTitle: string; selector: string; suggestion: Candidate; mode: string },
+    entry: { testTitle: string; selector: string; origin?: string; suggestion: Candidate; mode: string },
     logDir = '.selector-doctor',
 ): void {
     if (!existsSync(logDir)) mkdirSync(logDir, { recursive: true })
@@ -27,6 +29,7 @@ export function appendHeal(
         at: new Date().toISOString(),
         testTitle: entry.testTitle,
         selector: entry.selector,
+        origin: entry.origin,
         suggestion: entry.suggestion.selector,
         verdict: entry.suggestion.verdict,
         score: entry.suggestion.score,
