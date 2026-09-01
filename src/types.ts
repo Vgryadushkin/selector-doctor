@@ -13,6 +13,8 @@ export type Signals = {
     target: Compound
     /** Everything the target was expected to live under, outermost first. */
     ancestors: Compound[]
+    /** Parts of the selector this version cannot translate - an xpath, an unknown engine. */
+    unsupported: string[]
     text?: { value: string; regex: boolean; ignoreCase: boolean }
     requiresVisible: boolean
 }
@@ -28,6 +30,8 @@ export type Verdict =
     | 'text-changed'
     /** Nothing close enough - most likely the element is genuinely gone. */
     | 'absent'
+    /** Part of the selector could not be translated, so no claim about the element is justified. */
+    | 'unreadable'
 
 export type Candidate = {
     /** Playwright-flavoured, ready to show a human: `div.v-list-item:has-text("Week")`. */
@@ -45,10 +49,25 @@ export type Candidate = {
     verdict: Verdict
 }
 
+/** Parts of the page the serialized HTML could not show. */
+export type Unexplored = {
+    /** Custom elements that are empty in the serialization - the usual sign of a shadow root. */
+    shadowHosts: number
+    /** Frames, whose documents are not part of this HTML at all. */
+    frames: number
+}
+
 export type Diagnosis = {
     selector: string
     verdict: Verdict
     candidates: Candidate[]
     /** Anything the caller should know that the verdict alone does not say. */
     note?: string
+    /**
+     * Set when the DOM had subtrees this HTML cannot reach. Present with `absent` it means the
+     * verdict is inconclusive, not final - the element may be alive inside a shadow root or a frame.
+     */
+    unexplored?: Unexplored
+    /** The parts of the selector that could not be read, when the verdict is `unreadable`. */
+    unsupported?: string[]
 }

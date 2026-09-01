@@ -65,3 +65,40 @@ test('a rebuilt dropdown is found through the text the selector filtered on', ()
     assert.equal(best.matches, 1, 'a healable candidate has to be unique')
     assert.match(best.selector, /v-list-item|v-list-item-title/)
 })
+
+const shadowApp = `
+<body>
+  <app-header></app-header>
+  <main><iframe src="/wallet"></iframe></main>
+</body>`
+
+test('absent is marked inconclusive when the page has subtrees the HTML cannot show', () => {
+    const result = diagnose({ selector: '.header div.profile-avatar', html: shadowApp })
+    assert.equal(result.verdict, 'absent')
+    assert.deepEqual(result.unexplored, { shadowHosts: 1, frames: 1 })
+    assert.match(result.note ?? '', /inconclusive/)
+})
+
+test('absent stays final when nothing was hidden from the serialization', () => {
+    const result = diagnose({ selector: '.header div.profile-avatar', html: noAvatarAtAll })
+    assert.equal(result.unexplored, undefined)
+    assert.match(result.note ?? '', /most likely gone/)
+})
+
+// The heal gate is `score >= 0.8` by default, so where a move lands relative to it is behaviour,
+// not a detail: it decides whether the tool's own headline example is healable at all.
+
+test('an element that only moved stays above the default heal threshold', () => {
+    const result = diagnose({ selector: '.header div.profile-avatar', html: mobileHeader })
+    assert.equal(result.candidates[0].verdict, 'moved')
+    assert.ok(result.candidates[0].score >= 0.8, `a clean move scored ${result.candidates[0].score}`)
+    assert.equal(result.candidates[0].matches, 1)
+})
+
+test('a move that also lost part of the identity is reported, not healed', () => {
+    const result = diagnose({ selector: '.header div.profile-avatar.round', html: mobileHeader })
+    // Losing an identity signal outranks the move in the verdict: `renamed` is the thing to fix.
+    assert.equal(result.verdict, 'renamed')
+    assert.deepEqual(result.candidates[0].whatChanged, ['class .round → .profile-avatar', 'no longer inside .header'])
+    assert.ok(result.candidates[0].score < 0.8, `a lossy move scored ${result.candidates[0].score}`)
+})
